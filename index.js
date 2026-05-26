@@ -1,23 +1,28 @@
 import { Demodulator } from "./demodulator.js";
 import { AircraftStore } from "./aircraft-store.js";
 import { AircraftMap } from "./aircraft-map.js";
+import { AircraftList } from "./aircraft-list.js";
 import { startDemo } from "./demo.js";
 
 let readSamples = true;
-let introSection  = document.querySelector('.intro');
-let mainSection   = document.querySelector('.app');
-let waitingMessage = document.querySelector('.blink-me');
-let msgString = '';
-let msgsArray = [];
+let introSection = document.querySelector('.intro');
+let mainSection  = document.querySelector('.app');
 let started = false;
-let msgReceived = false;
 
 const demodulator = new Demodulator();
 const store = new AircraftStore();
 const aircraftMap = new AircraftMap();
+const aircraftList = new AircraftList('ac-list');
 
 // Wire store → map: every time an aircraft state changes, update the marker.
 store.onChange(ac => aircraftMap.updateAircraft(ac));
+
+// Wire map → list: mirror map state into the sidebar.
+aircraftMap.onUpdate((hex, ac, enr) => aircraftList.update(hex, ac, enr));
+aircraftMap.onRemove(hex => aircraftList.remove(hex));
+
+// Wire list → map: clicking a scratchpad card highlights the marker.
+aircraftList.onSelect(hex => aircraftMap.selectAircraft(hex));
 
 // Remove stale aircraft every 30 s.
 setInterval(() => {
@@ -58,7 +63,6 @@ async function start() {
 function demo() {
     introSection.style.display = "none";
     mainSection.style.display = "flex";
-    waitingMessage.style.display = "none";
     aircraftMap.init('map', 47.38, 8.54);
     startDemo(store);
 }
@@ -69,54 +73,5 @@ document.getElementById('btn-demo').onclick    = () => demo();
 
 // --- Message handler ---
 const onMsg = (msg) => {
-    if (!msgReceived) {
-        waitingMessage.style.display = "none";
-        msgReceived = true;
-    }
-    displayAircraftData(msg);
     store.update(msg);
-};
-
-// --- Text feed (unchanged from original) ---
-const displayAircraftData = msg => {
-    msgsArray.push(JSON.stringify(msg));
-    handleData(msgsArray);
-};
-
-let msgIndex = 0;
-let previousIndex;
-
-const handleData = array => {
-    if (msgIndex !== previousIndex) {
-        let msg = JSON.parse(array[msgIndex]);
-
-        let keys = Object.keys(msg).filter(k => k !== 'msg');
-        keys.forEach(k => {
-            msgString += `${k}: ${msg[k]},`;
-        });
-
-        showText(".data", msgString, 0, 20);
-        previousIndex = msgIndex;
-    }
-};
-
-let timer;
-
-var showText = function (target, message, index, interval) {
-    if (index < message.length) {
-        document.querySelector('.data').append(`${message[index++]}`);
-
-        if (message[index] === ",") {
-            document.querySelector('.data').append(`${message[index++]}`);
-            document.querySelector('.data').innerHTML += "</br>";
-        }
-        document.querySelector('.data').scrollTop = document.querySelector('.data').scrollHeight;
-
-        timer = setTimeout(function () {
-            showText(target, message, index, interval);
-        }, interval);
-    } else {
-        clearTimeout(timer);
-        msgIndex++;
-    }
 };

@@ -79,16 +79,17 @@ export function decodeGlobalCpr(evenFrame, oddFrame, useOdd) {
  */
 export function decodeLocalCpr(rawLat, rawLon, isOdd, refLat, refLon) {
     const dLat = isOdd ? D_LAT_ODD : D_LAT_EVEN;
-    const nz   = isOdd ? 59 : 60;
 
-    const j   = Math.floor(refLat / dLat + 0.5) + Math.floor(0.5 + mod(rawLat / 131072, 1) - mod(refLat / dLat, 1));
+    // floor() not round(): rounding inflates the zone index by 1 when the
+    // reference is in the upper half of its CPR zone (frac > 0.5).
+    const j   = Math.floor(refLat / dLat) + Math.floor(0.5 + mod(refLat / dLat, 1) - rawLat / 131072);
     const lat = dLat * (j + rawLat / 131072);
 
-    const nl = nlFunction(lat);
-    const ni = Math.max(nl - (isOdd ? 1 : 0), 1);
+    const nl  = nlFunction(lat);
+    const ni  = Math.max(nl - (isOdd ? 1 : 0), 1);
     const dLon = 360 / ni;
 
-    const m   = Math.floor(refLon / dLon + 0.5) + Math.floor(0.5 + mod(rawLon / 131072, 1) - mod(refLon / dLon, 1));
+    const m   = Math.floor(refLon / dLon) + Math.floor(0.5 + mod(refLon / dLon, 1) - rawLon / 131072);
     const lon = dLon * (m + rawLon / 131072);
 
     if (lat < -90 || lat > 90) return null;

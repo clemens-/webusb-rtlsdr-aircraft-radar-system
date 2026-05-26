@@ -69,24 +69,70 @@ p {
     min-width: 0;
 }
 
-/* --- Data feed sidebar --- */
+/* --- Aircraft list sidebar --- */
 #data-panel {
     width: 300px;
     flex-shrink: 0;
     height: 100%;
-    overflow-y: auto;
     background: #0a0a1a;
-    padding: 0.5em;
     box-sizing: border-box;
     border-left: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
 }
 
-.data {
+#ac-list-header {
+    padding: 0.6em 1em;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+#ac-list-count {
+    color: #888;
+    font-size: 0.9em;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+#ac-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+}
+
+.ac-list-card {
+    cursor: pointer;
+}
+
+.ac-list-card .ac-tooltip {
+    white-space: normal;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.ac-list-card.selected .ac-tooltip {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.ac-list-empty {
+    color: #888;
     font-size: 0.85em;
-    line-height: 1.4;
-    word-break: break-all;
-    white-space: pre-wrap;
-    color: #a0e0b0;
+    text-align: center;
+    margin-top: 2em;
+    animation: blinker 1.5s linear infinite;
 }
 
 /* --- Aircraft tooltip --- */

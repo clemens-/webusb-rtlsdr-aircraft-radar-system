@@ -4,8 +4,23 @@
 import { fetchEnrichment } from './enrichment.js';
 
 const AIRCRAFT_TYPE_LABELS = ['Unknown', 'Light', 'Small', 'Large / Heavy'];
-const TRACK_COLOR  = 'rgba(0, 255, 136, 0.4)';
+const TRACK_COLOR         = 'rgba(0, 255, 136, 0.4)';
+const VECTOR_COLOR        = 'rgba(0, 255, 136, 0.85)';
+const VECTOR_SHADOW_COLOR = 'rgba(0, 0, 0, 0.7)';
 const MARKER_COLOR = '#00ff88';
+
+// Returns [lat, lon] of the position reached after 1 minute at the given
+// speed (knots) and heading (degrees, 0 = north clockwise), or null.
+function projectPosition(lat, lon, headingDeg, speedKts) {
+    if (speedKts == null || headingDeg == null) return null;
+    const R       = 6371000; // Earth radius in metres
+    const distM   = (speedKts / 60) * 1852; // 1 min at current speed
+    const hdgRad  = headingDeg * Math.PI / 180;
+    const latRad  = lat * Math.PI / 180;
+    const newLat  = lat + (distM * Math.cos(hdgRad) / R) * (180 / Math.PI);
+    const newLon  = lon + (distM * Math.sin(hdgRad) / (R * Math.cos(latRad))) * (180 / Math.PI);
+    return [newLat, newLon];
+}
 
 const TOOLTIP_OPTS = {
     permanent: false,
@@ -14,12 +29,24 @@ const TOOLTIP_OPTS = {
     opacity:   1,
 };
 
-function makeIcon(heading) {
+function makeIcon(heading, highlighted = false) {
     // ✈ glyph points east by default; subtract 90° so 0° heading = north.
     const deg = (heading ?? 0) - 90;
+    // Outer div stays upright so the highlight ring stays circular.
+    const ringStyle = highlighted
+        ? 'box-shadow: 0 0 0 2px #fff, 0 0 8px rgba(255,255,255,0.7);'
+        : '';
     return L.divIcon({
         className: '',
         html: `<div style="
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            ${ringStyle}
+        "><div style="
             transform: rotate(${deg}deg);
             font-size: 24px;
             line-height: 1;
@@ -30,14 +57,14 @@ function makeIcon(heading) {
             justify-content: center;
             width: 30px;
             height: 30px;
-        ">✈</div>`,
+        ">✈</div></div>`,
         iconSize:     [30, 30],
         iconAnchor:   [15, 15],
         tooltipAnchor:[15, 0],
     });
 }
 
-function tooltipContent(ac, enr = null) {
+export function tooltipContent(ac, enr = null) {
     const callsign = ac.callsign || '——';
     const alt      = ac.altitude != null ? `${ac.altitude.toLocaleString()} ft` : '—';
     const spd      = ac.speed    != null ? `${Math.round(ac.speed)} kts`        : '—';
@@ -83,6 +110,34 @@ export class AircraftMap {
         this._markers   = new Map(); // icaoHex → { marker, polyline, ac, enrichment, lastCallsign, pinned }
         this._fitted    = false;
         this._pinnedHex = null;
+        this._updateCb   = null;
+        this._removeCb   = null;
+        this._selectedHex = null;
+    }
+
+    onUpdate(fn) { this._updateCb = fn; }
+    onRemove(fn) { this._removeCb = fn; }
+
+    selectAircraft(icaoHex) {
+        const prev = this._selectedHex;
+        this._selectedHex = (prev === icaoHex) ? null : icaoHex;
+
+        // Refresh icon for the previously selected aircraft.
+        if (prev) {
+            const e = this._markers.get(prev);
+            if (e) e.marker.setIcon(makeIcon(e.ac.heading, false));
+        }
+        // Refresh icon for the newly selected aircraft and fly to it.
+        if (this._selectedHex) {
+            const e = this._markers.get(this._selectedHex);
+            if (e) {
+                e.marker.setIcon(makeIcon(e.ac.heading, true));
+                this._map.flyTo(
+                    [e.ac.lat, e.ac.lon],
+                    Math.max(this._map.getZoom(), 10),
+                );
+            }
+        }
     }
 
     init(divId, lat = 47.38, lon = 8.54) {
@@ -111,17 +166,22 @@ export class AircraftMap {
             const entry = this._markers.get(ac.icaoHex);
             entry.ac = ac;
             entry.marker.setLatLng(latlng);
-            entry.marker.setIcon(makeIcon(ac.heading));
+            entry.marker.setIcon(makeIcon(ac.heading, ac.icaoHex === this._selectedHex));
             entry.marker.setTooltipContent(tooltipContent(ac, entry.enrichment));
             if (ac.positionHistory.length >= 2) {
                 entry.polyline.setLatLngs(ac.positionHistory.map(p => [p.lat, p.lon]));
             }
+            const projected = projectPosition(ac.lat, ac.lon, ac.heading, ac.speed);
+            const coords = projected ? [latlng, projected] : [];
+            entry.vectorShadow.setLatLngs(coords);
+            entry.vector.setLatLngs(coords);
+            this._updateCb?.(ac.icaoHex, entry.ac, entry.enrichment);
             // Callsign may arrive after the marker was first created — trigger enrichment then.
             if (ac.callsign && ac.callsign !== entry.lastCallsign) {
                 this._startEnrichment(entry);
             }
         } else {
-            const marker = L.marker(latlng, { icon: makeIcon(ac.heading) })
+            const marker = L.marker(latlng, { icon: makeIcon(ac.heading, ac.icaoHex === this._selectedHex) })
                 .addTo(this._map)
                 .bindTooltip(tooltipContent(ac), TOOLTIP_OPTS);
 
@@ -135,8 +195,20 @@ export class AircraftMap {
                 dashArray: '5, 6',
             }).addTo(this._map);
 
-            const entry = { marker, polyline, ac, enrichment: null, lastCallsign: '', pinned: false };
+            const projected = projectPosition(ac.lat, ac.lon, ac.heading, ac.speed);
+            const vectorCoords = projected ? [latlng, projected] : [];
+            const vectorShadow = L.polyline(vectorCoords, {
+                color:  VECTOR_SHADOW_COLOR,
+                weight: 5,
+            }).addTo(this._map);
+            const vector = L.polyline(vectorCoords, {
+                color:  VECTOR_COLOR,
+                weight: 1.5,
+            }).addTo(this._map);
+
+            const entry = { marker, polyline, vectorShadow, vector, ac, enrichment: null, lastCallsign: '', pinned: false };
             this._markers.set(ac.icaoHex, entry);
+            this._updateCb?.(ac.icaoHex, ac, null);
 
             marker.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
@@ -155,10 +227,13 @@ export class AircraftMap {
     removeAircraft(icaoHex) {
         if (!this._map || !this._markers.has(icaoHex)) return;
         if (this._pinnedHex === icaoHex) this._pinnedHex = null;
-        const { marker, polyline } = this._markers.get(icaoHex);
+        const { marker, polyline, vectorShadow, vector } = this._markers.get(icaoHex);
         marker.remove();
         polyline.remove();
+        vectorShadow.remove();
+        vector.remove();
         this._markers.delete(icaoHex);
+        this._removeCb?.(icaoHex);
     }
 
     // --- private ---
@@ -169,6 +244,7 @@ export class AircraftMap {
         fetchEnrichment(ac.icaoHex, ac.callsign).then(enr => {
             entry.enrichment = enr;
             entry.marker.setTooltipContent(tooltipContent(entry.ac, enr));
+            this._updateCb?.(entry.ac.icaoHex, entry.ac, enr);
         });
     }
 
