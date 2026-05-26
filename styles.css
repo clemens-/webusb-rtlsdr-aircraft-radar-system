@@ -10,14 +10,26 @@
     font-size: 2em;
 }
 
+.btn-group {
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    margin-top: 1em;
+}
+
 .app {
     display: none;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
 }
 
 body {
     font-family: monospace;
     font-weight: 800;
     margin: 0;
+    background: #0a0a1a;
+    color: #eee;
 }
 
 button {
@@ -28,6 +40,11 @@ button {
     font-size: 1.2em;
     padding: .5em 1em;
     cursor: pointer;
+    color: inherit;
+}
+
+button:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 p {
@@ -45,13 +62,82 @@ p {
     }
 }
 
-.data {
-    font-size: 1.5em;
-    overflow-y: scroll;
-    height: 90vh;
-    padding: 1em;
+/* --- Map panel --- */
+#map {
+    flex: 1;
+    height: 100%;
+    min-width: 0;
 }
 
+/* --- Data feed sidebar --- */
+#data-panel {
+    width: 300px;
+    flex-shrink: 0;
+    height: 100%;
+    overflow-y: auto;
+    background: #0a0a1a;
+    padding: 0.5em;
+    box-sizing: border-box;
+    border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+.data {
+    font-size: 0.85em;
+    line-height: 1.4;
+    word-break: break-all;
+    white-space: pre-wrap;
+    color: #a0e0b0;
+}
+
+/* --- Aircraft tooltip --- */
+.ac-tooltip-wrapper {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.ac-tooltip-wrapper::before {
+    display: none !important;
+}
+
+.ac-tooltip {
+    background: rgba(10, 10, 26, 0.92);
+    border: 1px solid rgba(0, 255, 136, 0.5);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #eee;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.ac-tooltip-header {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00ff88;
+    margin-bottom: 3px;
+}
+
+.ac-icao {
+    font-size: 11px;
+    color: #888;
+    font-weight: normal;
+}
+
+.ac-enrichment {
+    margin: 4px 0 2px;
+    padding: 4px 0 2px;
+    border-top: 1px solid rgba(0, 255, 136, 0.2);
+    font-size: 11px;
+    color: #a8c8ff;
+    line-height: 1.5;
+}
+
+.ac-route {
+    color: #ccc;
+}
 
 footer {
     position: absolute;

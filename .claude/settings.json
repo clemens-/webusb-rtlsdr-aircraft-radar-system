@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Repos\\\\webusb-rtlsdr-aircraft-radar-system\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(python -m http.server 8765)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8765 -ErrorAction SilentlyContinue)",
+      "PowerShell(Start-Process -FilePath \"python\" -ArgumentList \"-m\", \"http.server\", \"8765\" -WorkingDirectory \"c:\\\\Repos\\\\webusb-rtlsdr-aircraft-radar-system\" -WindowStyle Hidden)",
+      "PowerShell(Start-Process -FilePath \"python\" -ArgumentList \"-m\", \"http.server\", \"8766\" -WorkingDirectory \"c:\\\\Repos\\\\webusb-rtlsdr-aircraft-radar-system\" -PassThru | Select-Object Id; Start-Sleep -Seconds 2; try { $r = Invoke-WebRequest -Uri \"http://localhost:8766\" -TimeoutSec 5; \"HTTP $\\($r.StatusCode\\) — $\\($r.Content.Length\\) bytes\" } catch { $_ })",
+      "PowerShell(Start-Sleep -Seconds 2; $wc = New-Object System.Net.WebClient; $wc.DownloadString\\(\"http://localhost:8766/index.html\"\\).Substring\\(0, 500\\))",
+      "PowerShell(node -e \"require\\('playwright'\\)\" 2>&1)",
+      "PowerShell(if \\($?\\) { \"playwright available\" } else { \"not found\" })",
+      "PowerShell(python -c \"import playwright; print\\('ok'\\)\" 2>&1)",
+      "PowerShell(python -c \"from playwright.sync_api import sync_playwright; print\\('sync api ok'\\)\" 2>&1)",
+      "PowerShell($wc = New-Object System.Net.WebClient; $wc.DownloadString\\(\"http://localhost:9222/json/version\"\\) | ConvertFrom-Json | Select-Object Browser, webSocketDebuggerUrl)",
+      "PowerShell(python -c \"import json, urllib.request, time; print\\('json ok'\\)\")",
+      "PowerShell(python -c \"import websocket; print\\('ok'\\)\" 2>&1)",
+      "PowerShell(pip install websocket-client --quiet 2>&1)",
+      "PowerShell(pip install websocket-client 2>&1)",
+      "PowerShell(python --version)",
+      "PowerShell(python -c \"import sys; print\\(sys.executable\\)\")",
+      "PowerShell($conda_python = \"C:\\\\Users\\\\CLCL\\\\AppData\\\\Local\\\\miniconda3\\\\python.exe\"; if \\(Test-Path $conda_python\\) { & $conda_python -c \"import websocket; print\\('ok'\\)\" } else { \"not found\" })",
+      "PowerShell(& \"C:\\\\Users\\\\CLCL\\\\AppData\\\\Local\\\\miniconda3\\\\python.exe\" \"C:\\\\Users\\\\CLCL\\\\AppData\\\\Local\\\\Temp\\\\verify_cdp.py\" 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; & \"C:\\\\Users\\\\CLCL\\\\AppData\\\\Local\\\\miniconda3\\\\python.exe\" \"C:\\\\Users\\\\CLCL\\\\AppData\\\\Local\\\\Temp\\\\verify_cdp2.py\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\CLCL\\AppData\\Local\\Temp"
+    ]
+  }
+}

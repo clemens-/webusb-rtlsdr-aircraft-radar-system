@@ -11,6 +11,7 @@
     <meta property="og:url" content="">
     <meta name="twitter:card" content="summary_large_image">
     <title>Aircraft radar system in JavaScript</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -18,20 +19,22 @@
     <section class="intro">
         <section>
             <h1>✈️ LIVE AIRPLANES TRACKER 📡</h1>
-            <button>Connect to antenna</button>
+            <div class="btn-group">
+                <button id="btn-connect">Connect to antenna</button>
+                <button id="btn-demo">Demo mode</button>
+            </div>
         </section>
     </section>
 
     <main class="app">
-        <div id="canvas">
+        <div id="map"></div>
+        <div id="data-panel">
             <p class="blink-me">Waiting for airplane...</p>
-
             <p class="data"></p>
         </div>
     </main>
-    <footer>Made by <a href="https://twitter.com/devdevcharlie">@devdevcharlie</a> | More info in <a
-            href="https://charliegerard.dev/blog/aircraft-radar-system-rtl-sdr-web-usb">the blog
-            post</a></footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="rtlsdr.js"></script>
     <script src="index.js" type="module"></script>
 </body>
